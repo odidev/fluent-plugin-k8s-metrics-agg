@@ -21,7 +21,28 @@ jobs:
           root: /tmp
           paths:
             - pkg
-
+  release_images:
+    docker:
+      - image: circleci/ruby:2.7.4-node-browsers-legacy
+    working_directory: ~/repo
+    steps:
+      - checkout
+      - setup_remote_docker:
+          reusable: true
+      - run:
+          name: Install dependencies
+          command: |
+            mkdir -p ~/.docker/cli-plugins
+            wget -O - https://github.com/docker/buildx/releases/download/v0.5.1/buildx-v0.5.1.linux-amd64 > ~/.docker/cli-plugins/docker-buildx
+            chmod a+x ~/.docker/cli-plugins/docker-buildx
+            sudo apt install software-properties-common
+            curl -fsSL https://get.docker.com -o get-docker.sh
+            sudo sh get-docker.sh
+            .circleci/install_dep.sh
+      - run:
+          name: release
+          command: |
+            make docker
   unit_test:
     docker:
       - image: circleci/ruby:2.6.1-node-browsers
@@ -77,6 +98,7 @@ workflows:
               ignore: 
                 - /^release\/.*/
                 - main
+      - release_images:
       - unit_test:
           requires:
             - build

@@ -16,8 +16,14 @@ docker: build install-deps
 	@cp pkg/fluent-plugin-*.gem docker
 	@mkdir -p docker/licenses
 	@cp -rp LICENSE docker/licenses/
-	@docker build --no-cache --pull --build-arg VERSION=$(VERSION) -t splunk/k8s-metrics-aggr:$(VERSION) ./docker
-
+	@docker context create tls-environment
+	@docker context ls
+	@docker buildx create --name mybuilder --use tls-environment 
+	@docker buildx inspect --bootstrap
+	@docker login -u ${USERNAME} -p ${PASSWORD}
+	@docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
+	@docker buildx build --build-arg VERSION=$(VERSION) -t odidev/k8s-metrics-agggr:$(VERSION) --platform linux/amd64,linux/arm64 --push ./docker
+	@docker buildx rm mybuilder
 unit-test: 
 	@bundle exec rake test
 
